@@ -1,14 +1,19 @@
 import pygame as pg
 from entities.player import Player
+from level.level import Level
 
 
 class Game:
     def __init__(self, app):
         self.clock = pg.time.Clock()
         self.app = app
+
         self.players = pg.sprite.Group()
-        for i in range(4):
-            Player(self.players, i)
+
+        # TODO: Create players depending on inputs
+        for i in range(1):
+            Player(app, self.players, i)
+        self.level = Level(self)
 
     def update(self):
         for event in pg.event.get():
@@ -24,6 +29,7 @@ class Game:
             player.update()
 
         # Render
+        self.level.draw(self.app.screen)
         for player in self.players:
             player.draw(self.app.screen)
 
