@@ -78,15 +78,11 @@ class ControlMenu:
         self.input_handlers.append(InputHandler("keyboard"))
 
         for joystick in self.joysticks:
-            print(f"Joystick {joystick.get_id()}: {joystick.get_name()}")
-
+            print(f"Joystick {joystick.get_instance_id()}: {joystick.get_name()}")
             self.input_handlers.append(InputHandler("joystick", joystick))
-
-        print(self.input_handlers)
 
     def update(self, events):
         for event in events:
-            print(2, event)
             if event.type == pygame.QUIT:
                 pygame.quit()
                 quit()
@@ -96,8 +92,8 @@ class ControlMenu:
                     self.app.menu.load_buttons("menu_player_select")
 
             for input_handler in self.input_handlers:
-                input = input_handler.get_input()
-                for value in input.values():
+                user_input = input_handler.get_input()
+                for value in user_input.values():
                     if value:
                         make_player = True
                         for player in self.app.players:

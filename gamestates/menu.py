@@ -144,7 +144,6 @@ class Menu:
 
     def update(self, events):
         for event in events:
-            print(0, event)
             if event.type == pygame.QUIT:
                 pygame.quit()
                 quit()
@@ -159,7 +158,7 @@ class Menu:
                         self.load_buttons(button.next_menu)
 
                     if button.action.startswith("option_resolution_"):
-                        value = button.next_menu.split("_")[2]
+                        value = button.action.split("_")[2]
                         self.app.change_scale(int(value))
 
                     if button.action.startswith("action_quit"):
