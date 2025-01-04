@@ -1,4 +1,4 @@
-import pygame as pg
+import pygame as pygame
 import os
 import json
 
@@ -8,18 +8,18 @@ class InputBox:
         self.active_colour = active_colour
         self.inactive_colour = inactive_colour
         self.text_colour = text_colour
-        self.font = pg.font.Font(font, font_size)
+        self.font = pygame.font.Font(font, font_size)
 
         x = center_x - width / 2
         y = center_y - height / 2
-        self.rect = pg.Rect(x, y, width, height)
+        self.rect = pygame.Rect(x, y, width, height)
         self.color = self.inactive_colour
         self.text = text
         self.txt_surface = self.font.render(text, True, self.color)
         self.active = False
 
     def handle_event(self, event):
-        if event.type == pg.MOUSEBUTTONDOWN:
+        if event.type == pygame.MOUSEBUTTONDOWN:
             # If the user clicked on the input_box rect.
             if self.rect.collidepoint(event.pos):
                 # Toggle the active variable.
@@ -28,11 +28,11 @@ class InputBox:
                 self.active = False
             # Change the current color of the input box.
             self.color = self.active_colour if self.active else self.inactive_colour
-        if event.type == pg.KEYDOWN:
+        if event.type == pygame.KEYDOWN:
             if self.active:
-                if event.key == pg.K_RETURN:
+                if event.key == pygame.K_RETURN:
                     self.active = False
-                elif event.key == pg.K_BACKSPACE:
+                elif event.key == pygame.K_BACKSPACE:
                     self.text = self.text[:-1]
                 else:
                     self.text += event.unicode
@@ -50,13 +50,13 @@ class InputBox:
         # Blit the text.
         screen.blit(self.txt_surface, (self.rect.x + 5, self.rect.y + 5))
         # Blit the rect.
-        pg.draw.rect(screen, self.color, self.rect, 2)
+        pygame.draw.rect(screen, self.color, self.rect, 2)
 
 
 class Button:
-    def __init__(self, center_x, center_y, width, height, border, curve, buttonColour, textColour, hoverColour, id, text, font='freesansbold.ttf', font_size=80, text_offset=0):
+    def __init__(self, center_x, center_y, width, height, border, curve, buttonColour, textColour, hoverColour, next_menu, action, game_states, text, font='freesansbold.ttf', font_size=80, text_offset=0):
         self.font_size = font_size
-        self.font = pg.font.Font(font, font_size)
+        self.font = pygame.font.Font(font, font_size)
         self.text_offset = text_offset
 
         x = center_x - width / 2
@@ -68,9 +68,11 @@ class Button:
         self.buttonColour = buttonColour
         self.textColour = textColour
         self.hover_colour = hoverColour
-        self.id = id
+        self.next_menu = next_menu
+        self.action = action
+        self.game_states = game_states
         self.text = text
-        self.rect = pg.Rect(self.x, self.y, width, height)
+        self.rect = pygame.Rect(self.x, self.y, width, height)
 
         self.highlighted = False
 
@@ -80,16 +82,16 @@ class Button:
 
         if self.rect.collidepoint(event.pos):
             self.highlighted = True
-            if event.type == pg.MOUSEBUTTONDOWN:
+            if event.type == pygame.MOUSEBUTTONDOWN:
                 return True
         elif not self.rect.collidepoint(event.pos):
             self.highlighted = False
 
     def draw(self, screen):
         if self.highlighted:
-            pg.draw.rect(screen, self.hover_colour, self.rect, self.border, self.curve)
+            pygame.draw.rect(screen, self.hover_colour, self.rect, self.border, self.curve)
         else:
-            pg.draw.rect(screen, self.buttonColour, self.rect, self.border, self.curve)
+            pygame.draw.rect(screen, self.buttonColour, self.rect, self.border, self.curve)
 
         if self.text != "":
             text_surf = self.font.render(self.text, True, self.textColour)
@@ -133,42 +135,39 @@ class Menu:
         for button in button_info:
             if button["type"] == "click":
                 self.buttons.append(
-                    Button(button["x"], button["y"], button["width"], button["height"], button["border"], button["curve"], button["buttonColour"], button["textColour"], button["hoverColour"], button["id"], button["text"], button["font"], button["font_size"], button["text_offset"])
+                    Button(button["x"], button["y"], button["width"], button["height"], button["border"], button["curve"], button["buttonColour"], button["textColour"], button["hoverColour"], button["next_menu"], button["action"], button["game_states"], button["text"], button["font"], button["font_size"], button["text_offset"])
                 )
             elif button["type"] == "input_box":
                 self.buttons.append(
                     InputBox(button["x"], button["y"], button["width"], button["height"], button["active_colour"], button["inactive_colour"], button["textColour"], button["font"], button["font_size"])
                 )
 
-    def update(self):
-        for event in pg.event.get():
-            if event.type == pg.QUIT:
-                pg.quit()
+    def update(self, events):
+        for event in events:
+            print(0, event)
+            if event.type == pygame.QUIT:
+                pygame.quit()
                 quit()
 
             for button in self.buttons:
                 if button.handle_event(event) and isinstance(button, Button):
 
-                    if button.id.startswith("menu_"):  # Check if the button is an input box
-                        self.load_buttons(button.id)
+                    if button.game_states:
+                        self.app.change_state(button.game_states)
 
-                    if button.id.startswith("gamestate_"):
-                        value = button.id.split("_")[1]
-                        self.app.game_state = int(value)
+                    if button.next_menu.startswith("menu_"):  # Check if the button is an input box
+                        self.load_buttons(button.next_menu)
 
-                    if button.id.startswith("option_resolution_"):
-                        value = button.id.split("_")[2]
+                    if button.action.startswith("option_resolution_"):
+                        value = button.next_menu.split("_")[2]
                         self.app.change_scale(int(value))
 
-                    if button.id.startswith("button_quit"):
-                        pg.quit()
+                    if button.action.startswith("action_quit"):
+                        pygame.quit()
                         quit()
 
-                elif isinstance(button, InputBox) and event.type == pg.KEYDOWN and event.key == pg.K_RETURN:
+                elif isinstance(button, InputBox) and event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
                     return "input_box_" + str(button.text)
 
         for button in self.buttons:
             button.draw(self.app.screen)
-
-        pg.display.update()
-        self.app.screen.fill((60, 60, 60))

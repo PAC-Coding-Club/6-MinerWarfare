@@ -1,12 +1,16 @@
 import pygame
 
 
+class Tool():
+    def __init__(self, tool_type=None):
+        self.type = tool_type
+
+
 class Player(pygame.sprite.Sprite):
-    def __init__(self, app, group, player_id):
+    def __init__(self, app, group, input_handler):
         super().__init__()  # Adds all attributes and methods from parent object
 
-        self.gravity = 1
-        self.player_id = player_id
+        self.input_handler = input_handler
         self.app = app
 
         ### USE FOR IMAGE
@@ -26,29 +30,40 @@ class Player(pygame.sprite.Sprite):
         # Add the sprite to the group
         group.add(self)
 
-        # TODO: load controls from json depending on player_id
-        self.controls = {
-            "up": pygame.K_w,
-            "left": pygame.K_a,
-            "down": pygame.K_s,
-            "right": pygame.K_d,
+        self.tools = {
+            1: Tool("pickaxe"),
+            2: Tool("Knife"),
         }
+        self.selected_tool = 1
 
     def draw(self, surface):
         surface.blit(self.image, self.rect)
 
+    def select_tool(self, tool_id):
+        self.selected_tool = tool_id
+
     def update(self):
         # TODO: Add better player movement and gravity
-        keys = pygame.key.get_pressed()
-        if keys[self.controls["left"]]:
+        controls = self.input_handler.get_input()
+
+        # Movement controls
+        if controls["left"]:
             self.rect.x -= 3
-        if keys[self.controls["right"]]:
+        if controls["right"]:
             self.rect.x += 3
-        if keys[self.controls["up"]]:
+        if controls["up"]:
             self.rect.y -= 3
-        if keys[self.controls["down"]]:
+        if controls["down"]:
             self.rect.y += 3
-        self.rect.y += self.gravity
+
+        # Select tool based on controls
+        if controls["select_tool_1"]:
+            self.selected_tool = 1
+        if controls["select_tool_2"]:
+            self.selected_tool = 2
+
+        # Apply gravity
+        self.rect.y += 1
 
         blocks = []
         for block in self.app.game.level.blocks.sprites():
@@ -68,7 +83,6 @@ class Player(pygame.sprite.Sprite):
                 right_dist = pygame.Vector2(self.rect.right, self.rect.centery).distance_to(block_center)
 
                 closest = min(top_dist, bottom_dist, left_dist, right_dist)
-                print(top_dist, bottom_dist, left_dist, right_dist)
                 if closest == top_dist:
                     if self.rect.top < block.rect.bottom:
                         self.rect.top = block.rect.bottom
