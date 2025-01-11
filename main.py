@@ -58,7 +58,6 @@ class App:
                 self.game = Game(self)
         if 2 in new_state:
             # Control menu is not saved.
-            # Allows new controllers to be found by leaving and re-entering the menu
             self.control_menu = ControlMenu(self)
         self.game_states = new_state
 

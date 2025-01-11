@@ -125,6 +125,10 @@ class ControlMenu:
         self.input_handlers.append(InputHandler("keyboard"))
         self.refresh_inputs()
 
+        for sprite in self.app.players.sprites():
+            sprite.kill()
+        self.app.players.empty()
+
     def refresh_inputs(self):
         self.joysticks = [pygame.joystick.Joystick(i) for i in range(pygame.joystick.get_count())]
 
@@ -148,13 +152,13 @@ class ControlMenu:
                 quit()
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
-                    self.app.change_state([0])
-                    self.app.menu.load_buttons("menu_player_select")
+                    self.app.change_state([0, 2])
+                    self.app.menu.load_buttons("menu_controls")
 
             for input_handler in self.input_handlers:
                 user_input = input_handler.get_input()
                 if input_handler.control_type == "keyboard":
-                    user_input["use"] = False # Use gets triggered by mouse click on the menu
+                    user_input["use"] = False  # Use gets triggered by mouse click on the menu
                 for value in user_input.values():
                     if value:
                         make_player = True
@@ -165,6 +169,22 @@ class ControlMenu:
                             player = Player(self.app, self.app.players, input_handler)
                             input_handler.player = player
 
-        font = pygame.font.Font(None, 36)
-        text = font.render(str(self.app.players.__len__()), True, (255, 255, 255))
+        font_1 = pygame.font.Font(None, 36)
+        font_2 = pygame.font.Font(None, 16)
+
+        text = font_1.render(str(self.app.players.__len__()), True, (255, 255, 255))
         self.app.screen.blit(text, (10, 10))
+
+        for i in range(4):
+            x = 50
+            player_text = font_1.render(f"Player {i+1}", True, (255, 255, 255))
+            self.app.screen.blit(player_text, (x + 140 * i, 160))
+            if i < len(self.app.players):
+                if self.app.players.sprites()[i].input_handler.control_type == "joystick":
+                    connected_text = font_2.render(f"Connected: \n{self.app.players.sprites()[i].input_handler.joystick.get_name()}", True, (255, 255, 255))
+                else:
+                    connected_text = font_2.render(f"Connected: \nKeyboard", True, (255, 255, 255))
+            else:
+                connected_text = font_2.render(f"Press a Button", True, (255, 255, 255))
+
+            self.app.screen.blit(connected_text, (x + 140 * i, 190))
