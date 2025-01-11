@@ -16,7 +16,7 @@ class Game:
                 quit()
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
-                    self.app.game_states = [0, 2]
+                    self.app.change_state([0, 2])
 
         # Update
         self.app.players.update()

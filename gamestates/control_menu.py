@@ -125,10 +125,6 @@ class ControlMenu:
         self.input_handlers.append(InputHandler("keyboard"))
         self.refresh_inputs()
 
-        for sprite in self.app.players.sprites():
-            sprite.kill()
-        self.app.players.empty()
-
     def refresh_inputs(self):
         self.joysticks = [pygame.joystick.Joystick(i) for i in range(pygame.joystick.get_count())]
 

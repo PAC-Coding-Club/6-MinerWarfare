@@ -58,6 +58,9 @@ class App:
                 self.game = Game(self)
         if 2 in new_state:
             # Control menu is not saved.
+            for sprite in self.players.sprites():
+                sprite.kill()
+            self.players.empty()
             self.control_menu = ControlMenu(self)
         self.game_states = new_state
 
