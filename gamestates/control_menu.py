@@ -1,5 +1,5 @@
+import math
 import pygame
-
 from entities.player import Player
 
 
@@ -7,6 +7,7 @@ class InputHandler:
     def __init__(self, control_type, joystick=None):
         self.control_type = control_type  # "keyboard" or "joystick"
         self.joystick = joystick  # Reference to the assigned joystick object
+        self.player = None
 
         # Define default control mappings for keyboard
         self.key_binds = {
@@ -16,6 +17,9 @@ class InputHandler:
             "right": pygame.K_d,
             "select_tool_1": pygame.K_1,
             "select_tool_2": pygame.K_2,
+            "switch_tool_right": None,
+            "switch_tool_left": None,
+            "use": pygame.MOUSEBUTTONDOWN,
         }
 
         # Define joystick button/axes mappings (example)
@@ -23,8 +27,11 @@ class InputHandler:
         self.joystick_binds = {
             "up_axis": 1,  # Y-axis negative movement
             "right_axis": 0,  # X-axis positive movement
-            "button_tool_1": 0,  # Button 0 selects tool 1
-            "button_tool_2": 1,  # Button 1 selects tool 2
+            "button_tool_1": None,  # Button 0 selects tool 1
+            "button_tool_2": None,  # Button 1 selects tool 2
+            "switch_tool_right": 5,
+            "switch_tool_left": 4,
+            "use": 0,
         }
 
     def get_input(self):
@@ -39,6 +46,10 @@ class InputHandler:
             "right": False,
             "select_tool_1": False,
             "select_tool_2": False,
+            "switch_tool_right": False,
+            "switch_tool_left": False,
+            "use": False,
+            "angle": None,
         }
 
         if self.control_type == "keyboard":
@@ -49,6 +60,13 @@ class InputHandler:
             controls["right"] = keys[self.key_binds["right"]]
             controls["select_tool_1"] = keys[self.key_binds["select_tool_1"]]
             controls["select_tool_2"] = keys[self.key_binds["select_tool_2"]]
+            controls["use"] = keys[self.key_binds["use"]]
+            if self.player:
+                coords = pygame.Vector2(pygame.mouse.get_pos()) - pygame.Vector2(self.player.rect.center)
+                angle = math.atan2(-coords.y, coords.x)
+                if math.degrees(angle) < 0:
+                    angle += 2 * math.pi
+                controls["angle"] = angle
 
         elif self.control_type == "joystick" and self.joystick:
             # Get joystick axis values and apply a deadzone
@@ -62,8 +80,30 @@ class InputHandler:
                 controls["right"] = True
 
             # Check joystick button presses
-            controls["select_tool_1"] = self.joystick.get_button(self.joystick_binds["button_tool_1"])
-            controls["select_tool_2"] = self.joystick.get_button(self.joystick_binds["button_tool_2"])
+            if self.joystick_binds["button_tool_1"]:
+                controls["select_tool_1"] = self.joystick.get_button(self.joystick_binds["button_tool_1"])
+            if self.joystick_binds["button_tool_2"]:
+                controls["select_tool_2"] = self.joystick.get_button(self.joystick_binds["button_tool_2"])
+
+            if self.joystick_binds["switch_tool_right"]:
+                controls["switch_tool_right"] = self.joystick.get_button(self.joystick_binds["switch_tool_right"])
+            if self.joystick_binds["switch_tool_left"]:
+                controls["switch_tool_left"] = self.joystick.get_button(self.joystick_binds["switch_tool_left"])
+
+            controls["use"] = self.joystick.get_button(self.joystick_binds["use"])
+
+            if self.player:
+                x = self.joystick.get_axis(2)
+                y = self.joystick.get_axis(3)
+
+                # No input = None, with a dead zone
+                if abs(x) < self.axis_threshold and abs(y) < self.axis_threshold:
+                    controls["angle"] = None
+                else:
+                    angle = math.atan2(-y, x)
+                    if math.degrees(angle) < 0:
+                        angle += 2 * math.pi
+                    controls["angle"] = angle
 
         return controls
 
@@ -72,16 +112,28 @@ class ControlMenu:
     def __init__(self, app):
         self.app = app
 
-        self.num_players = 2
-        self.joysticks = [pygame.joystick.Joystick(i) for i in range(pygame.joystick.get_count())]
+        self.joysticks = None
         self.input_handlers = []
         self.input_handlers.append(InputHandler("keyboard"))
+        self.refresh_inputs()
+
+    def refresh_inputs(self):
+        self.joysticks = [pygame.joystick.Joystick(i) for i in range(pygame.joystick.get_count())]
 
         for joystick in self.joysticks:
             print(f"Joystick {joystick.get_instance_id()}: {joystick.get_name()}")
-            self.input_handlers.append(InputHandler("joystick", joystick))
+
+            activated = False
+            for handler in self.input_handlers:
+                if handler.joystick:
+                    if joystick.get_instance_id() == handler.joystick.get_instance_id():
+                        activated = True
+            if not activated:
+                self.input_handlers.append(InputHandler("joystick", joystick))
 
     def update(self, events):
+        self.refresh_inputs()
+
         for event in events:
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -100,7 +152,8 @@ class ControlMenu:
                             if player.input_handler == input_handler:
                                 make_player = False
                         if make_player:
-                            Player(self.app, self.app.players, input_handler)
+                            player = Player(self.app, self.app.players, input_handler)
+                            input_handler.player = player
 
         font = pygame.font.Font(None, 36)
         text = font.render(str(self.app.players.__len__()), True, (255, 255, 255))

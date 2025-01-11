@@ -1,4 +1,5 @@
 import pygame
+import math
 
 
 class Tool():
@@ -30,21 +31,31 @@ class Player(pygame.sprite.Sprite):
         # Add the sprite to the group
         group.add(self)
 
-        self.tools = {
-            1: Tool("pickaxe"),
-            2: Tool("Knife"),
-        }
-        self.selected_tool = 1
+        self.tools = [
+            Tool("Pickaxe"),
+            Tool("Knife"),
+        ]
+        self.selected_tool = 0
+        self.angle = 0
 
     def draw(self, surface):
         surface.blit(self.image, self.rect)
 
-    def select_tool(self, tool_id):
-        self.selected_tool = tool_id
+        if self.angle is not None:
+            start_pos = self.rect.center
+
+            # Draw direction arrow
+            end_pos = (
+                start_pos[0] + 50 * math.cos(self.angle),
+                start_pos[1] - 50 * math.sin(self.angle)
+            )
+            pygame.draw.line(surface, (0, 255, 0), start_pos, end_pos, 2)
 
     def update(self):
         # TODO: Add better player movement and gravity
         controls = self.input_handler.get_input()
+        if not hasattr(self, 'previous_controls'):
+            self.previous_controls = controls
 
         # Movement controls
         if controls["left"]:
@@ -58,9 +69,36 @@ class Player(pygame.sprite.Sprite):
 
         # Select tool based on controls
         if controls["select_tool_1"]:
-            self.selected_tool = 1
+            self.selected_tool = 0
+            print("Selected tool 1")
         if controls["select_tool_2"]:
-            self.selected_tool = 2
+            self.selected_tool = 1
+            print("Selected tool 2")
+
+        # Handle switch_tool_right logic
+        if controls["switch_tool_right"] and not self.previous_controls["switch_tool_right"]:
+            self.selected_tool += 1
+            if self.selected_tool >= len(self.tools):
+                self.selected_tool = 0
+
+        # Handle switch_tool_left logic
+        if controls["switch_tool_left"] and not self.previous_controls["switch_tool_left"]:
+            self.selected_tool -= 1
+            if self.selected_tool < 0:
+                self.selected_tool = len(self.tools) - 1
+
+        if controls["use"]:
+            if self.selected_tool == 1:
+                pass
+            if self.selected_tool == 2:
+                pass
+            print("Used tool")
+
+        print(self.tools[self.selected_tool].type)
+
+        # Set angle
+        if controls["angle"] is not None:
+            self.angle = controls["angle"]
 
         # Apply gravity
         self.rect.y += 1
@@ -97,3 +135,5 @@ class Player(pygame.sprite.Sprite):
                         self.rect.right = block.rect.left
                 else:
                     pass
+
+        self.previous_controls = controls
