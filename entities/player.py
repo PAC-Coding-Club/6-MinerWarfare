@@ -52,11 +52,11 @@ class Player(pygame.sprite.Sprite):
             pygame.draw.line(surface, (0, 255, 0), start_pos, end_pos, 2)
 
     def update(self):
-        # TODO: Add better player movement and gravity
         controls = self.input_handler.get_input()
         if not hasattr(self, 'previous_controls'):
             self.previous_controls = controls
 
+        # TODO: Add better player movement and gravity
         # Movement controls
         if controls["left"]:
             self.rect.x -= 3
@@ -66,42 +66,41 @@ class Player(pygame.sprite.Sprite):
             self.rect.y -= 3
         if controls["down"]:
             self.rect.y += 3
+        # Apply gravity
+        self.rect.y += 1
 
         # Select tool based on controls
         if controls["select_tool_1"]:
             self.selected_tool = 0
-            print("Selected tool 1")
+            print("Selected tool", self.tools[self.selected_tool].type)
         if controls["select_tool_2"]:
             self.selected_tool = 1
-            print("Selected tool 2")
+            print("Selected tool", self.tools[self.selected_tool].type)
 
         # Handle switch_tool_right logic
         if controls["switch_tool_right"] and not self.previous_controls["switch_tool_right"]:
             self.selected_tool += 1
             if self.selected_tool >= len(self.tools):
                 self.selected_tool = 0
+            print("Selected tool", self.tools[self.selected_tool].type)
 
         # Handle switch_tool_left logic
         if controls["switch_tool_left"] and not self.previous_controls["switch_tool_left"]:
             self.selected_tool -= 1
             if self.selected_tool < 0:
                 self.selected_tool = len(self.tools) - 1
+            print("Selected tool", self.tools[self.selected_tool].type)
 
-        if controls["use"]:
+        if controls["use"] and not self.previous_controls["use"]:
             if self.selected_tool == 1:
                 pass
             if self.selected_tool == 2:
                 pass
-            print("Used tool")
-
-        print(self.tools[self.selected_tool].type)
+            print(f"Used {self.tools[self.selected_tool].type}")
 
         # Set angle
         if controls["angle"] is not None:
             self.angle = controls["angle"]
-
-        # Apply gravity
-        self.rect.y += 1
 
         blocks = []
         for block in self.app.game.level.blocks.sprites():

@@ -25,13 +25,17 @@ class InputHandler:
         # Define joystick button/axes mappings (example)
         self.axis_threshold = 0.2  # Deadzone for joystick
         self.joystick_binds = {
-            "up_axis": 1,  # Y-axis negative movement
-            "right_axis": 0,  # X-axis positive movement
+            "left_y_axis": 1,  # Y-axis negative movement
+            "left_x_axis": 0,  # X-axis positive movement
+            "right_y_axis": 3,  #
+            "right_x_axis": 2,  #
+            "left_trigger_axis": 4,
+            "right_trigger_axis": 5,
             "button_tool_1": None,  # Button 0 selects tool 1
             "button_tool_2": None,  # Button 1 selects tool 2
-            "switch_tool_right": 5,
-            "switch_tool_left": 4,
-            "use": 0,
+            "right_bumper": 5,
+            "left_bumper": 4,
+
         }
 
     def get_input(self):
@@ -60,7 +64,8 @@ class InputHandler:
             controls["right"] = keys[self.key_binds["right"]]
             controls["select_tool_1"] = keys[self.key_binds["select_tool_1"]]
             controls["select_tool_2"] = keys[self.key_binds["select_tool_2"]]
-            controls["use"] = keys[self.key_binds["use"]]
+            controls["use"] = pygame.mouse.get_pressed()[0]
+
             if self.player:
                 coords = pygame.Vector2(pygame.mouse.get_pos()) - pygame.Vector2(self.player.rect.center)
                 angle = math.atan2(-coords.y, coords.x)
@@ -70,13 +75,13 @@ class InputHandler:
 
         elif self.control_type == "joystick" and self.joystick:
             # Get joystick axis values and apply a deadzone
-            if self.joystick.get_axis(self.joystick_binds["up_axis"]) < -self.axis_threshold:
+            if self.joystick.get_axis(self.joystick_binds["left_y_axis"]) < -self.axis_threshold:
                 controls["up"] = True
-            if self.joystick.get_axis(self.joystick_binds["up_axis"]) > self.axis_threshold:
+            if self.joystick.get_axis(self.joystick_binds["left_y_axis"]) > self.axis_threshold:
                 controls["down"] = True
-            if self.joystick.get_axis(self.joystick_binds["right_axis"]) < -self.axis_threshold:
+            if self.joystick.get_axis(self.joystick_binds["left_x_axis"]) < -self.axis_threshold:
                 controls["left"] = True
-            if self.joystick.get_axis(self.joystick_binds["right_axis"]) > self.axis_threshold:
+            if self.joystick.get_axis(self.joystick_binds["left_x_axis"]) > self.axis_threshold:
                 controls["right"] = True
 
             # Check joystick button presses
@@ -85,16 +90,19 @@ class InputHandler:
             if self.joystick_binds["button_tool_2"]:
                 controls["select_tool_2"] = self.joystick.get_button(self.joystick_binds["button_tool_2"])
 
-            if self.joystick_binds["switch_tool_right"]:
-                controls["switch_tool_right"] = self.joystick.get_button(self.joystick_binds["switch_tool_right"])
-            if self.joystick_binds["switch_tool_left"]:
-                controls["switch_tool_left"] = self.joystick.get_button(self.joystick_binds["switch_tool_left"])
+            if self.joystick_binds["right_bumper"]:
+                controls["switch_tool_right"] = self.joystick.get_button(self.joystick_binds["right_bumper"])
+            if self.joystick_binds["left_bumper"]:
+                controls["switch_tool_left"] = self.joystick.get_button(self.joystick_binds["left_bumper"])
 
-            controls["use"] = self.joystick.get_button(self.joystick_binds["use"])
+            if self.joystick_binds["right_trigger_axis"]:
+                value = self.joystick.get_axis(self.joystick_binds["right_trigger_axis"])
+                if value > -self.axis_threshold and value != 0:
+                    controls["use"] = True
 
             if self.player:
-                x = self.joystick.get_axis(2)
-                y = self.joystick.get_axis(3)
+                x = self.joystick.get_axis(self.joystick_binds["right_x_axis"])
+                y = self.joystick.get_axis(self.joystick_binds["right_y_axis"])
 
                 # No input = None, with a dead zone
                 if abs(x) < self.axis_threshold and abs(y) < self.axis_threshold:
@@ -145,6 +153,8 @@ class ControlMenu:
 
             for input_handler in self.input_handlers:
                 user_input = input_handler.get_input()
+                if input_handler.control_type == "keyboard":
+                    user_input["use"] = False # Use gets triggered by mouse click on the menu
                 for value in user_input.values():
                     if value:
                         make_player = True
